@@ -65,3 +65,7 @@ export interface BulkCreateResponse {
     reason: string;
   }>;
 }
+
+export interface DeleteByDateResponse {
+  deleted: number;
+}

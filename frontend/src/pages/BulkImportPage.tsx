@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { parseLooseBulkInput } from "@shared/bulkImport";
-import { bulkCreateVocab } from "../lib/api";
+import { bulkCreateVocab, enrichVocabItem } from "../lib/api";
 
 const sampleInput = `[IV] Business English
 
@@ -19,6 +19,7 @@ const sampleInput = `[IV] Business English
 
 export function BulkImportPage() {
   const [rawText, setRawText] = useState(sampleInput);
+  const [autoEnrich, setAutoEnrich] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,8 +33,20 @@ export function BulkImportPage() {
 
     try {
       const result = await bulkCreateVocab(rawText);
+
+      if (autoEnrich) {
+        for (const item of result.created) {
+          if (item.meaning?.trim()) {
+            continue;
+          }
+          await enrichVocabItem(item.id);
+        }
+      }
+
       setMessage(
-        `Imported ${result.created.length} item(s), skipped ${result.skipped.length}.`
+        autoEnrich
+          ? `Imported ${result.created.length} item(s), auto-filled AI for items without meaning, skipped ${result.skipped.length}.`
+          : `Imported ${result.created.length} item(s), skipped ${result.skipped.length}.`
       );
     } catch (importError) {
       setError(
@@ -68,6 +81,11 @@ export function BulkImportPage() {
             rows={18}
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
+            onFocus={() => {
+              if (rawText === sampleInput) {
+                setRawText("");
+              }
+            }}
             placeholder="Paste your notes here"
           />
         </label>
@@ -112,6 +130,14 @@ export function BulkImportPage() {
           ) : null}
           {message ? <p className="success-banner">{message}</p> : null}
           {error ? <p className="error-banner">{error}</p> : null}
+          <label className="toggle-row">
+            <input
+              checked={autoEnrich}
+              onChange={(event) => setAutoEnrich(event.target.checked)}
+              type="checkbox"
+            />
+            Auto-fill Chinese meaning, synonyms, and example sentence after bulk import
+          </label>
           <button
             className="primary-button"
             disabled={submitting || preview.items.length === 0}

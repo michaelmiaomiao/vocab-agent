@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   deleteVocabItem,
+  deleteVocabByDate,
+  enrichVocabItem,
   listVocabSorted,
   mergeVocabItem,
   updateVocabItem
@@ -139,11 +141,13 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
   const [items, setItems] = useState<VocabItem[]>([]);
   const [filter, setFilter] = useState<ReviewStatus | "all">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("newest");
+  const [deleteDate, setDeleteDate] = useState("");
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   const [editingItems, setEditingItems] = useState<Record<number, boolean>>({});
   const [busyItems, setBusyItems] = useState<Record<number, "save" | "delete" | "merge" | null>>({});
+  const [deletingByDate, setDeletingByDate] = useState(false);
   const [drafts, setDrafts] = useState<
-    Record<number, { meaning: string; note: string; group_label: string; source: string; merge_target: string }>
+    Record<number, { phrase_text: string; meaning: string; note: string; group_label: string; source: string; merge_target: string }>
   >({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,6 +222,41 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
     }
   }
 
+  async function handleDeleteByDate() {
+    if (!deleteDate) {
+      return;
+    }
+
+    const start = new Date(`${deleteDate}T00:00:00`);
+    const end = new Date(`${deleteDate}T00:00:00`);
+    end.setDate(end.getDate() + 1);
+
+    if (!window.confirm(`Delete all items created on ${deleteDate}?`)) {
+      return;
+    }
+
+    setDeletingByDate(true);
+
+    try {
+      const result = await deleteVocabByDate({
+        start_at: start.toISOString(),
+        end_at: end.toISOString()
+      });
+      setDeleteDate("");
+      setError(null);
+      await loadItems(filter);
+      if (result.deleted === 0) {
+        setError("No items found for that date.");
+      }
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Delete by date failed"
+      );
+    } finally {
+      setDeletingByDate(false);
+    }
+  }
+
   function toggleExpanded(id: number) {
     setExpandedItems((current) => ({
       ...current,
@@ -234,6 +273,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
     setDrafts((current) => ({
       ...current,
       [item.id]: current[item.id] ?? {
+        phrase_text: item.phrase_text,
         meaning: item.meaning || "",
         note: item.note || "",
         group_label: item.group_label || "",
@@ -250,13 +290,15 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
     setBusyItems((current) => ({ ...current, [id]: "save" }));
 
     try {
-      const updated = await updateVocabItem(id, {
+      await updateVocabItem(id, {
+        phrase_text: draft.phrase_text,
         meaning: draft.meaning,
         note: draft.note,
         group_label: draft.group_label,
         source: draft.source
       });
-      mergeUpdatedItem(updated);
+      const refreshed = await enrichVocabItem(id);
+      mergeUpdatedItem(refreshed);
       setEditingItems((current) => ({ ...current, [id]: false }));
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Save failed");
@@ -361,6 +403,21 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
             word type
           </button>
         </div>
+        <div className="filter-row delete-date-row">
+          <input
+            type="date"
+            value={deleteDate}
+            onChange={(event) => setDeleteDate(event.target.value)}
+          />
+          <button
+            className="ghost-button"
+            disabled={!deleteDate || deletingByDate}
+            onClick={() => void handleDeleteByDate()}
+            type="button"
+          >
+            {deletingByDate ? "Deleting..." : "Delete by date"}
+          </button>
+        </div>
       </div>
 
       {error ? <p className="error-banner">{error}</p> : null}
@@ -457,6 +514,21 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                   {editingItems[item.id] ? (
                     <div className="ai-box">
                       <p className="section-kicker">Modify</p>
+                      <label>
+                        Phrase
+                        <input
+                          value={drafts[item.id]?.phrase_text || ""}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [item.id]: {
+                                ...current[item.id],
+                                phrase_text: event.target.value
+                              }
+                            }))
+                          }
+                        />
+                      </label>
                       <label>
                         Meaning
                         <input

@@ -1,5 +1,6 @@
 import type {
   BulkCreateResponse,
+  DeleteByDateResponse,
   ReviewStatus,
   UpdateVocabItemInput,
   VocabItem,
@@ -80,6 +81,13 @@ export function updateVocabItem(id: number, payload: UpdateVocabItemInput) {
 export function deleteVocabItem(id: number) {
   return request<void>(`/api/vocab/${id}`, {
     method: "DELETE"
+  });
+}
+
+export function deleteVocabByDate(payload: { start_at: string; end_at: string }) {
+  return request<DeleteByDateResponse>("/api/vocab/delete-by-date", {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 

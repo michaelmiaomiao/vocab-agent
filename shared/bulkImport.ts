@@ -21,6 +21,27 @@ function normalizeWhitespace(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function stripLeadingMarkers(value: string) {
+  return value
+    .replace(/^[\s\-*•|>~`"'.,;:()[\]{}\\/]+/, "")
+    .replace(/[\s\-*•|>~`"'.,;:()[\]{}\\/]+$/, "")
+    .trim();
+}
+
+function shouldPreserveCase(value: string) {
+  return /[.!?]$/.test(value) || value.split(/\s+/).length >= 6;
+}
+
+function normalizeImportedPhrase(value: string) {
+  const cleaned = normalizeWhitespace(stripLeadingMarkers(value));
+
+  if (!cleaned) {
+    return "";
+  }
+
+  return shouldPreserveCase(cleaned) ? cleaned : cleaned.toLowerCase();
+}
+
 function isHeading(line: string) {
   return /^(#{1,6}\s+.+|\[[^\]]+\].+)$/.test(line);
 }
@@ -65,7 +86,7 @@ function splitInlineNote(line: string) {
 function splitPhraseVariants(phraseSide: string) {
   return phraseSide
     .split(/\s*(?:<>|\/)\s*/g)
-    .map((value) => normalizeWhitespace(value))
+    .map((value) => normalizeImportedPhrase(value))
     .filter(Boolean);
 }
 
@@ -96,7 +117,7 @@ export function parseLooseBulkInput(rawText: string): BulkImportPreview {
       return;
     }
 
-    const bulletStripped = trimmed.replace(/^[-*•]\s+/, "").trim();
+    const bulletStripped = trimmed.replace(/^[-*•|]+\s+/, "").trim();
     const candidate = normalizeWhitespace(bulletStripped);
 
     if (!candidate) {
@@ -117,7 +138,7 @@ export function parseLooseBulkInput(rawText: string): BulkImportPreview {
     }
 
     const synonyms = dedupe(
-      variants.slice(1).map((value) => value.replace(/\.$/, "").trim())
+      variants.slice(1).map((value) => normalizeImportedPhrase(value.replace(/\.$/, "").trim()))
     );
 
     items.push({

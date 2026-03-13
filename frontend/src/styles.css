@@ -115,6 +115,13 @@ a {
   background: rgba(255, 255, 255, 0.96);
 }
 
+.delete-date-row input {
+  border: 1px solid rgba(29, 29, 31, 0.12);
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .nav a {
   padding: 10px 14px;
   border-radius: 999px;
