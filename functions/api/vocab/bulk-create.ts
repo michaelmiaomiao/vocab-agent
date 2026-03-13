@@ -1,6 +1,7 @@
 import type { AppPagesFunction } from "../../types";
 import { parseLooseBulkInput } from "../../../shared/bulkImport";
 import { error, json } from "../../utils/http";
+import { enrichAndApplyItem } from "../../utils/aiPipeline";
 import {
   findExistingPhrase,
   insertVocabItem,
@@ -20,6 +21,10 @@ export const onRequestPost: AppPagesFunction = async (context) => {
     typeof (body as { raw_text?: unknown })?.raw_text === "string"
       ? (body as { raw_text: string }).raw_text
       : "";
+  const autoEnrich =
+    typeof (body as { auto_enrich?: unknown })?.auto_enrich === "boolean"
+      ? (body as { auto_enrich: boolean }).auto_enrich
+      : false;
 
   if (!rawText.trim()) {
     return error("raw_text is required");
@@ -27,6 +32,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
 
   const preview = parseLooseBulkInput(rawText);
   const created = [];
+  const createdIds: number[] = [];
   const skipped = [...preview.skipped].map((item) => ({
     raw_line: item.raw_line,
     reason: item.reason
@@ -65,11 +71,27 @@ export const onRequestPost: AppPagesFunction = async (context) => {
 
     if (inserted) {
       created.push(toVocabItem(inserted));
+      createdIds.push(inserted.id);
     } else {
       skipped.push({
         raw_line: item.raw_line,
         reason: "Insert failed"
       });
+    }
+  }
+
+  if (autoEnrich && createdIds.length) {
+    const task = Promise.allSettled(
+      createdIds.map(async (id) => {
+        const item = await enrichAndApplyItem(context.env, id);
+        return item;
+      })
+    );
+
+    if (context.waitUntil) {
+      context.waitUntil(task);
+    } else {
+      void task;
     }
   }
 

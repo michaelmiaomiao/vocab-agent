@@ -11,6 +11,7 @@ export type AppPagesFunction<Params extends Record<string, string> = Record<stri
     request: Request;
     env: Env;
     params: Params;
+    waitUntil?: (promise: Promise<unknown>) => void;
   }
 ) => Response | Promise<Response>;
 

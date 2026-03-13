@@ -204,10 +204,6 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
   }, [filter]);
 
   async function handleDelete(id: number) {
-    if (!window.confirm("Delete this phrase?")) {
-      return;
-    }
-
     setBusyItems((current) => ({ ...current, [id]: "delete" }));
 
     try {
@@ -281,6 +277,16 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
         merge_target: ""
       }
     }));
+  }
+
+  function handleEditKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>,
+    id: number
+  ) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleSaveEdit(id);
+    }
   }
 
   async function handleSaveEdit(id: number) {
@@ -527,6 +533,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                               }
                             }))
                           }
+                          onKeyDown={(event) => handleEditKeyDown(event, item.id)}
                         />
                       </label>
                       <label>
@@ -542,6 +549,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                               }
                             }))
                           }
+                          onKeyDown={(event) => handleEditKeyDown(event, item.id)}
                         />
                       </label>
                       <label>
@@ -557,6 +565,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                               }
                             }))
                           }
+                          onKeyDown={(event) => handleEditKeyDown(event, item.id)}
                         />
                       </label>
                       <label>
@@ -572,6 +581,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                               }
                             }))
                           }
+                          onKeyDown={(event) => handleEditKeyDown(event, item.id)}
                         />
                       </label>
                       <label>
@@ -587,6 +597,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                               }
                             }))
                           }
+                          onKeyDown={(event) => handleEditKeyDown(event, item.id)}
                         />
                       </label>
                       <label>

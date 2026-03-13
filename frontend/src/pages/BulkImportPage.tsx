@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { parseLooseBulkInput } from "@shared/bulkImport";
-import { bulkCreateVocab, enrichVocabItem } from "../lib/api";
+import { bulkCreateVocab } from "../lib/api";
 
 const sampleInput = `[IV] Business English
 
@@ -32,20 +32,11 @@ export function BulkImportPage() {
     setError(null);
 
     try {
-      const result = await bulkCreateVocab(rawText);
-
-      if (autoEnrich) {
-        for (const item of result.created) {
-          if (item.meaning?.trim()) {
-            continue;
-          }
-          await enrichVocabItem(item.id);
-        }
-      }
+      const result = await bulkCreateVocab(rawText, autoEnrich);
 
       setMessage(
         autoEnrich
-          ? `Imported ${result.created.length} item(s), auto-filled AI for items without meaning, skipped ${result.skipped.length}.`
+          ? `Imported ${result.created.length} item(s). AI enrichment is running in the background for items without meaning.`
           : `Imported ${result.created.length} item(s), skipped ${result.skipped.length}.`
       );
     } catch (importError) {

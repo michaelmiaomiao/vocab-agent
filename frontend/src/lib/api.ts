@@ -91,10 +91,10 @@ export function deleteVocabByDate(payload: { start_at: string; end_at: string })
   });
 }
 
-export function bulkCreateVocab(rawText: string) {
+export function bulkCreateVocab(rawText: string, autoEnrich = false) {
   return request<BulkCreateResponse>("/api/vocab/bulk-create", {
     method: "POST",
-    body: JSON.stringify({ raw_text: rawText })
+    body: JSON.stringify({ raw_text: rawText, auto_enrich: autoEnrich })
   });
 }
 
