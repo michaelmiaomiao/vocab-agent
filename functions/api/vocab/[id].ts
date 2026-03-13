@@ -89,6 +89,7 @@ export const onRequestPatch: AppPagesFunction = async (context) => {
           synonyms = ?,
           group_label = ?,
           review_status = ?,
+          favorite = ?,
           updated_at = ?
       WHERE id = ?`
   )
@@ -103,6 +104,9 @@ export const onRequestPatch: AppPagesFunction = async (context) => {
         ? parsed.value.group_label
         : loaded.row.group_label,
       parsed.value.review_status ?? loaded.row.review_status,
+      parsed.value.favorite !== undefined
+        ? Number(parsed.value.favorite)
+        : loaded.row.favorite,
       new Date().toISOString(),
       loaded.id
     )

@@ -2,7 +2,7 @@ import type { AppPagesFunction } from "../../types";
 import { parseLooseBulkInput } from "../../../shared/bulkImport";
 import { error, json } from "../../utils/http";
 import {
-  hasExistingPhrase,
+  findExistingPhrase,
   insertVocabItem,
   toVocabItem
 } from "../../utils/vocab";
@@ -31,15 +31,25 @@ export const onRequestPost: AppPagesFunction = async (context) => {
     raw_line: item.raw_line,
     reason: item.reason
   }));
+  const seenInBatch = new Set<string>();
 
   for (const item of preview.items) {
-    if (await hasExistingPhrase(context.env.DB, item.phrase_text)) {
+    const normalized = item.phrase_text
+      .toLowerCase()
+      .replace(/[“”"'`]/g, "")
+      .replace(/[.,!?;:()[\]{}]/g, " ")
+      .replace(/[-_/]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (seenInBatch.has(normalized) || (await findExistingPhrase(context.env.DB, item.phrase_text))) {
       skipped.push({
         raw_line: item.raw_line,
         reason: "Duplicate phrase_text"
       });
       continue;
     }
+    seenInBatch.add(normalized);
 
     const inserted = await insertVocabItem(context.env.DB, {
       phrase_text: item.phrase_text,
@@ -49,7 +59,8 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       meaning: item.meaning ?? null,
       synonyms: item.synonyms ?? [],
       group_label: item.group_label ?? null,
-      review_status: "new"
+      review_status: "new",
+      favorite: false
     });
 
     if (inserted) {

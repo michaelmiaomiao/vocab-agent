@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS vocab_items (
   group_label TEXT,
   review_status TEXT NOT NULL DEFAULT 'new'
     CHECK (review_status IN ('new', 'learning', 'mastered')),
+  favorite INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS vocab_ai_enrichment (
   correction_notes TEXT,
   suggested_meaning TEXT,
   suggested_group_label TEXT,
+  suggested_word_type TEXT,
   suggested_synonyms TEXT,
   suggested_antonyms TEXT,
   suggested_example_sentence TEXT,

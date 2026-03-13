@@ -13,6 +13,7 @@ export interface VocabPayload {
 
 export interface UpdateVocabItemInput extends Partial<VocabPayload> {
   review_status?: ReviewStatus;
+  favorite?: boolean;
 }
 
 export interface VocabItem {
@@ -25,6 +26,7 @@ export interface VocabItem {
   synonyms: string[];
   group_label: string | null;
   review_status: ReviewStatus;
+  favorite: boolean;
   created_at: string;
   updated_at: string;
   ai_enrichment: AiEnrichment | null;
@@ -42,6 +44,7 @@ export interface AiEnrichment {
   correction_notes: string | null;
   suggested_meaning: string | null;
   suggested_group_label: string | null;
+  suggested_word_type: string | null;
   suggested_synonyms: string[];
   suggested_antonyms: string[];
   suggested_example_sentence: string | null;

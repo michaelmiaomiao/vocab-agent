@@ -9,8 +9,8 @@
     "preview": "vite preview --config frontend/vite.config.ts",
     "cf:dev": "wrangler pages dev dist",
     "cf:deploy": "wrangler pages deploy dist",
-    "db:migrate:local": "wrangler d1 execute vocab-db --local --file=db/schema.sql",
-    "db:migrate:remote": "wrangler d1 execute vocab-db --remote --file=db/schema.sql"
+    "db:migrate:local": "wrangler d1 migrations apply vocab-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply vocab-db --remote"
   },
   "dependencies": {
     "react": "^19.1.0",

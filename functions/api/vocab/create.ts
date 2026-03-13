@@ -1,6 +1,7 @@
 import type { AppPagesFunction } from "../../types";
 import { error, json } from "../../utils/http";
 import {
+  findExistingPhrase,
   insertVocabItem,
   sanitizeCreatePayload,
   toVocabItem
@@ -19,6 +20,11 @@ export const onRequestPost: AppPagesFunction = async (context) => {
 
   if ("error" in parsed && parsed.error) {
     return error(parsed.error);
+  }
+
+  const existing = await findExistingPhrase(context.env.DB, parsed.value.phrase_text);
+  if (existing) {
+    return json(toVocabItem(existing, null), 200);
   }
 
   const row = await insertVocabItem(context.env.DB, parsed.value);

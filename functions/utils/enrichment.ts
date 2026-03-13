@@ -127,6 +127,22 @@ function inferAntonyms(item: VocabItem) {
   return dedupe(inferred);
 }
 
+function inferWordType(item: VocabItem) {
+  const phrase = item.phrase_text.trim();
+  const note = `${item.note ?? ""} ${item.meaning ?? ""}`.toLowerCase();
+
+  if (/[.!?]$/.test(phrase) || phrase.split(/\s+/).length >= 6) {
+    return "sentence pattern";
+  }
+
+  if (/\b名词\b|\bnoun\b/.test(note)) return "noun";
+  if (/\b动词\b|\bverb\b/.test(note)) return "verb";
+  if (/\b形容词\b|\badjective\b/.test(note)) return "adjective";
+  if (/\b副词\b|\badverb\b/.test(note)) return "adverb";
+  if (phrase.split(/\s+/).length >= 2) return "phrase";
+  return "word";
+}
+
 function inferExampleContext(group: string) {
   switch (group) {
     case "risk communication":
@@ -199,6 +215,7 @@ export function generateHeuristicEnrichment(item: VocabItem): Omit<AiEnrichment,
     correction_notes: "Heuristic fallback only. Add an OpenAI API key for real grammar and phrasing suggestions.",
     suggested_meaning: inferMeaning(item),
     suggested_group_label: group,
+    suggested_word_type: inferWordType(item),
     suggested_synonyms: inferSynonyms(item),
     suggested_antonyms: inferAntonyms(item),
     suggested_example_sentence: inferExampleSentence(item, group),

@@ -96,6 +96,16 @@ export function enrichVocabItem(id: number) {
   });
 }
 
+export function mergeVocabItem(
+  id: number,
+  payload: { target: string }
+) {
+  return request<VocabItem>(`/api/vocab/${id}/merge`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function applyAiSuggestion(id: number) {
   return request<VocabItem>(`/api/vocab/${id}/apply-ai`, {
     method: "POST"

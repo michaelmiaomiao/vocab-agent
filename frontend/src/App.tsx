@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { CapturePage } from "./pages/CapturePage";
@@ -5,6 +6,8 @@ import { BulkImportPage } from "./pages/BulkImportPage";
 import { ReviewPage } from "./pages/ReviewPage";
 
 export function App() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <div className="shell">
       <header className="hero">
@@ -20,14 +23,28 @@ export function App() {
           <NavLink to="/" end>
             List
           </NavLink>
+          <NavLink to="/favorites">Favorites</NavLink>
           <NavLink to="/capture">Capture</NavLink>
           <NavLink to="/bulk-import">Bulk Import</NavLink>
           <NavLink to="/review">Review</NavLink>
         </nav>
+        <label className="hero-search">
+          <span className="section-kicker">Search</span>
+          <input
+            placeholder="Search English, 中文, synonyms, meaning..."
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </label>
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage searchQuery={searchQuery} />} />
+          <Route
+            path="/favorites"
+            element={<HomePage favoritesOnly searchQuery={searchQuery} />}
+          />
           <Route path="/capture" element={<CapturePage />} />
           <Route path="/bulk-import" element={<BulkImportPage />} />
           <Route path="/review" element={<ReviewPage />} />

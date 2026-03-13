@@ -39,6 +39,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       correction_notes,
       suggested_meaning,
       suggested_group_label,
+      suggested_word_type,
       suggested_synonyms,
       suggested_antonyms,
       suggested_example_sentence,
@@ -50,13 +51,14 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       suggestion_source,
       suggested_at,
       accepted_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(item_id) DO UPDATE SET
       normalized_phrase = excluded.normalized_phrase,
       suggested_correction = excluded.suggested_correction,
       correction_notes = excluded.correction_notes,
       suggested_meaning = excluded.suggested_meaning,
       suggested_group_label = excluded.suggested_group_label,
+      suggested_word_type = excluded.suggested_word_type,
       suggested_synonyms = excluded.suggested_synonyms,
       suggested_antonyms = excluded.suggested_antonyms,
       suggested_example_sentence = excluded.suggested_example_sentence,
@@ -75,6 +77,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       suggestion.correction_notes,
       suggestion.suggested_meaning,
       suggestion.suggested_group_label,
+      suggestion.suggested_word_type,
       JSON.stringify(suggestion.suggested_synonyms),
       JSON.stringify(suggestion.suggested_antonyms),
       suggestion.suggested_example_sentence,
@@ -87,6 +90,36 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       suggestion.suggested_at,
       suggestion.accepted_at
     )
+    .run();
+
+  await context.env.DB.prepare(
+    `UPDATE vocab_items
+      SET phrase_text = COALESCE(?, phrase_text),
+          meaning = COALESCE(?, meaning),
+          synonyms = CASE
+            WHEN ? IS NOT NULL AND ? != '[]' THEN ?
+            ELSE synonyms
+          END,
+          group_label = COALESCE(?, group_label),
+          updated_at = ?
+      WHERE id = ?`
+  )
+    .bind(
+      suggestion.suggested_correction,
+      suggestion.suggested_meaning,
+      JSON.stringify(suggestion.suggested_synonyms),
+      JSON.stringify(suggestion.suggested_synonyms),
+      JSON.stringify(suggestion.suggested_synonyms),
+      suggestion.suggested_group_label,
+      new Date().toISOString(),
+      id
+    )
+    .run();
+
+  await context.env.DB.prepare(
+    `UPDATE vocab_ai_enrichment SET accepted_at = ? WHERE item_id = ?`
+  )
+    .bind(new Date().toISOString(), id)
     .run();
 
   const updated = await getItemWithEnrichment(context.env.DB, id);

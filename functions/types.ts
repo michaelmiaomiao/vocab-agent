@@ -24,6 +24,7 @@ export interface VocabRow {
   synonyms: string | null;
   group_label: string | null;
   review_status: ReviewStatus;
+  favorite: number;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ export interface VocabAiEnrichmentRow {
   correction_notes: string | null;
   suggested_meaning: string | null;
   suggested_group_label: string | null;
+  suggested_word_type: string | null;
   suggested_synonyms: string | null;
   suggested_antonyms: string | null;
   suggested_example_sentence: string | null;

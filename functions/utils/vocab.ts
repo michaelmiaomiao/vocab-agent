@@ -31,6 +31,16 @@ export function normalizeOptionalText(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+export function normalizePhraseKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[“”"'`]/g, "")
+    .replace(/[.,!?;:()[\]{}]/g, " ")
+    .replace(/[-_/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function normalizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -73,6 +83,7 @@ export function sanitizeUpdatePayload(input: Partial<UpdateVocabItemInput>) {
     synonyms?: string[];
     group_label?: string | null;
     review_status?: "new" | "learning" | "mastered";
+    favorite?: boolean;
   } = {};
 
   if ("phrase_text" in input) {
@@ -101,6 +112,13 @@ export function sanitizeUpdatePayload(input: Partial<UpdateVocabItemInput>) {
     next.review_status = input.review_status;
   }
 
+  if ("favorite" in input) {
+    if (typeof input.favorite !== "boolean") {
+      return { error: "Invalid favorite value" as const };
+    }
+    next.favorite = input.favorite;
+  }
+
   return { value: next };
 }
 
@@ -116,6 +134,7 @@ export function toAiEnrichment(row: VocabAiEnrichmentRow): AiEnrichment {
     correction_notes: row.correction_notes,
     suggested_meaning: row.suggested_meaning,
     suggested_group_label: row.suggested_group_label,
+    suggested_word_type: row.suggested_word_type,
     suggested_synonyms: parseJsonList(row.suggested_synonyms),
     suggested_antonyms: parseJsonList(row.suggested_antonyms),
     suggested_example_sentence: row.suggested_example_sentence,
@@ -141,6 +160,7 @@ export async function insertVocabItem(
     synonyms: string[];
     group_label: string | null;
     review_status: "new" | "learning" | "mastered";
+    favorite?: boolean;
   }
 ) {
   const now = new Date().toISOString();
@@ -155,9 +175,10 @@ export async function insertVocabItem(
         synonyms,
         group_label,
         review_status,
+        favorite,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       input.phrase_text,
@@ -168,6 +189,7 @@ export async function insertVocabItem(
       serializeList(input.synonyms),
       input.group_label,
       input.review_status,
+      input.favorite ? 1 : 0,
       now,
       now
     )
@@ -180,12 +202,19 @@ export async function insertVocabItem(
 }
 
 export async function hasExistingPhrase(db: D1Database, phraseText: string) {
-  const existing = await db
-    .prepare(`SELECT id FROM vocab_items WHERE lower(phrase_text) = lower(?) LIMIT 1`)
-    .bind(phraseText)
-    .first<{ id: number }>();
-
+  const existing = await findExistingPhrase(db, phraseText);
   return Boolean(existing);
+}
+
+export async function findExistingPhrase(db: D1Database, phraseText: string) {
+  const rows = await db
+    .prepare(`SELECT * FROM vocab_items`)
+    .all<VocabRow>();
+
+  const target = normalizePhraseKey(phraseText);
+  return (rows.results ?? []).find(
+    (row) => normalizePhraseKey(row.phrase_text) === target
+  ) ?? null;
 }
 
 export async function getEnrichmentMap(db: D1Database, itemIds: number[]) {
@@ -245,6 +274,7 @@ export function toVocabItem(
     synonyms: parseJsonList(row.synonyms),
     group_label: row.group_label,
     review_status: row.review_status,
+    favorite: Boolean(row.favorite),
     created_at: row.created_at,
     updated_at: row.updated_at
   };

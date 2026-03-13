@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { createVocabItem } from "../lib/api";
+import { parseLooseBulkInput } from "@shared/bulkImport";
+import { bulkCreateVocab, createVocabItem, enrichVocabItem } from "../lib/api";
 
 const initialState = {
   phrase_text: "",
@@ -13,9 +14,15 @@ const initialState = {
 
 export function CapturePage() {
   const [form, setForm] = useState(initialState);
+  const [quickInput, setQuickInput] = useState("");
+  const [autoEnrich, setAutoEnrich] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function isSubmitShortcut(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    return event.key === "Enter" && (event.metaKey || event.ctrlKey);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,7 +31,7 @@ export function CapturePage() {
     setError(null);
 
     try {
-      await createVocabItem({
+      const created = await createVocabItem({
         phrase_text: form.phrase_text,
         note: form.note || undefined,
         tags: form.tags
@@ -39,11 +46,62 @@ export function CapturePage() {
           .filter(Boolean),
         group_label: form.group_label || undefined
       });
+
+      const shouldAutoEnrich =
+        autoEnrich &&
+        !created.meaning?.trim();
+
+      if (shouldAutoEnrich) {
+        await enrichVocabItem(created.id);
+      }
+
       setForm(initialState);
-      setMessage("Phrase saved.");
+      setMessage(
+        shouldAutoEnrich
+          ? "Phrase saved and AI filled meaning/example."
+          : "Phrase saved."
+      );
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "Create failed"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleQuickImport() {
+    setSubmitting(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const parsed = parseLooseBulkInput(quickInput);
+
+      if (!parsed.items.length) {
+        throw new Error("Add at least one word or phrase");
+      }
+
+      const result = await bulkCreateVocab(quickInput);
+
+      if (autoEnrich) {
+        for (const item of result.created) {
+          if (item.meaning?.trim()) {
+            continue;
+          }
+          await enrichVocabItem(item.id);
+        }
+      }
+
+      setQuickInput("");
+      setMessage(
+        autoEnrich
+          ? `Imported ${result.created.length} item(s) and auto-filled AI meaning/example.`
+          : `Imported ${result.created.length} item(s).`
+      );
+    } catch (importError) {
+      setError(
+        importError instanceof Error ? importError.message : "Quick import failed"
       );
     } finally {
       setSubmitting(false);
@@ -62,6 +120,39 @@ export function CapturePage() {
         </p>
       </div>
       <form className="capture-form" onSubmit={(event) => void handleSubmit(event)}>
+        <div className="quick-box">
+          <div className="quick-box-header">
+            <div>
+              <p className="section-kicker">Quick Add</p>
+              <h3>Paste loose notes, one phrase per line or mixed bullets</h3>
+            </div>
+            <button
+              className="primary-button"
+              disabled={submitting}
+              onClick={() => void handleQuickImport()}
+              type="button"
+            >
+              {submitting ? "Importing..." : "Quick import"}
+            </button>
+          </div>
+          <textarea
+            rows={6}
+            placeholder={
+              "derive\nredact\nget the buy-in\nswitching gears\n\n## 动词\n- dive deeper 更详细地分析"
+            }
+            value={quickInput}
+            onChange={(event) => setQuickInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (isSubmitShortcut(event)) {
+                event.preventDefault();
+                void handleQuickImport();
+              }
+            }}
+          />
+          <p className="muted shortcut-note">
+            Cmd/Ctrl + Enter to quick import. Loose bullets and headings are okay.
+          </p>
+        </div>
         <label>
           Phrase text
           <textarea
@@ -71,6 +162,15 @@ export function CapturePage() {
             onChange={(event) =>
               setForm((current) => ({ ...current, phrase_text: event.target.value }))
             }
+            onKeyDown={(event) => {
+              if (isSubmitShortcut(event)) {
+                event.preventDefault();
+                const formElement = event.currentTarget.form;
+                if (formElement) {
+                  formElement.requestSubmit();
+                }
+              }
+            }}
           />
         </label>
         <label>
@@ -132,8 +232,17 @@ export function CapturePage() {
             }
           />
         </label>
+        <label className="toggle-row">
+          <input
+            checked={autoEnrich}
+            onChange={(event) => setAutoEnrich(event.target.checked)}
+            type="checkbox"
+          />
+          Auto-fill Chinese meaning, synonyms, and example sentence
+        </label>
         {message ? <p className="success-banner">{message}</p> : null}
         {error ? <p className="error-banner">{error}</p> : null}
+        <p className="muted shortcut-note">Cmd/Ctrl + Enter to save current phrase</p>
         <button className="primary-button" disabled={submitting} type="submit">
           {submitting ? "Saving..." : "Save phrase"}
         </button>
