@@ -1,10 +1,10 @@
-import type { PagesFunction } from "@cloudflare/workers-types";
-import type { Env } from "../../../types";
+import type { AppPagesFunction } from "../../../types";
 import { error, json } from "../../../utils/http";
 import { generateHeuristicEnrichment } from "../../../utils/enrichment";
+import { generateLlmEnrichment } from "../../../utils/llm";
 import { getItemWithEnrichment } from "../../../utils/vocab";
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: AppPagesFunction = async (context) => {
   const id = Number(context.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
@@ -17,12 +17,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return error("Item not found", 404);
   }
 
-  const suggestion = generateHeuristicEnrichment(item);
+  let suggestion = generateHeuristicEnrichment(item);
+
+  if (context.env.OPENAI_API_KEY) {
+    try {
+      suggestion = await generateLlmEnrichment(
+        item,
+        context.env.OPENAI_API_KEY,
+        context.env.OPENAI_MODEL || "gpt-4.1-mini"
+      );
+    } catch (llmError) {
+      console.error("LLM enrichment failed, falling back to heuristic", llmError);
+    }
+  }
 
   await context.env.DB.prepare(
     `INSERT INTO vocab_ai_enrichment (
       item_id,
       normalized_phrase,
+      suggested_correction,
+      correction_notes,
       suggested_meaning,
       suggested_group_label,
       suggested_synonyms,
@@ -36,9 +50,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       suggestion_source,
       suggested_at,
       accepted_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(item_id) DO UPDATE SET
       normalized_phrase = excluded.normalized_phrase,
+      suggested_correction = excluded.suggested_correction,
+      correction_notes = excluded.correction_notes,
       suggested_meaning = excluded.suggested_meaning,
       suggested_group_label = excluded.suggested_group_label,
       suggested_synonyms = excluded.suggested_synonyms,
@@ -55,6 +71,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     .bind(
       id,
       suggestion.normalized_phrase,
+      suggestion.suggested_correction,
+      suggestion.correction_notes,
       suggestion.suggested_meaning,
       suggestion.suggested_group_label,
       JSON.stringify(suggestion.suggested_synonyms),

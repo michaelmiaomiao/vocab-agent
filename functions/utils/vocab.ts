@@ -112,6 +112,8 @@ export function toAiEnrichment(row: VocabAiEnrichmentRow): AiEnrichment {
   return {
     item_id: row.item_id,
     normalized_phrase: row.normalized_phrase,
+    suggested_correction: row.suggested_correction,
+    correction_notes: row.correction_notes,
     suggested_meaning: row.suggested_meaning,
     suggested_group_label: row.suggested_group_label,
     suggested_synonyms: parseJsonList(row.suggested_synonyms),
@@ -191,13 +193,23 @@ export async function getEnrichmentMap(db: D1Database, itemIds: number[]) {
     return new Map<number, VocabAiEnrichmentRow>();
   }
 
-  const placeholders = itemIds.map(() => "?").join(", ");
-  const rows = await db
-    .prepare(`SELECT * FROM vocab_ai_enrichment WHERE item_id IN (${placeholders})`)
-    .bind(...itemIds)
-    .all<VocabAiEnrichmentRow>();
+  const result = new Map<number, VocabAiEnrichmentRow>();
+  const chunkSize = 50;
 
-  return new Map((rows.results ?? []).map((row) => [row.item_id, row]));
+  for (let index = 0; index < itemIds.length; index += chunkSize) {
+    const chunk = itemIds.slice(index, index + chunkSize);
+    const placeholders = chunk.map(() => "?").join(", ");
+    const rows = await db
+      .prepare(`SELECT * FROM vocab_ai_enrichment WHERE item_id IN (${placeholders})`)
+      .bind(...chunk)
+      .all<VocabAiEnrichmentRow>();
+
+    for (const row of rows.results ?? []) {
+      result.set(row.item_id, row);
+    }
+  }
+
+  return result;
 }
 
 export async function getItemWithEnrichment(db: D1Database, id: number) {

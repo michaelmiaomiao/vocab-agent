@@ -169,13 +169,13 @@ main {
 }
 
 .card-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .vocab-card,
 .review-card {
-  padding: 20px;
-  border-radius: 24px;
+  padding: 14px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(29, 29, 31, 0.07);
 }
@@ -186,7 +186,7 @@ main {
   gap: 12px;
   align-items: center;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.78rem;
 }
 
 .status-pill {
@@ -213,7 +213,7 @@ main {
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .meta-grid dt {
@@ -223,6 +223,16 @@ main {
 
 .meta-grid dd {
   margin: 4px 0 0;
+}
+
+.compact-meta,
+.compact-note {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+}
+
+.compact-meta {
+  color: var(--muted);
 }
 
 .capture-form {
@@ -279,11 +289,16 @@ main {
 }
 
 .ai-box {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 18px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
   background: rgba(23, 70, 162, 0.06);
   border: 1px solid rgba(23, 70, 162, 0.12);
+}
+
+.ai-box p {
+  margin: 4px 0;
+  font-size: 0.9rem;
 }
 
 .capture-form label {

@@ -1,9 +1,8 @@
-import type { PagesFunction } from "@cloudflare/workers-types";
-import type { Env, VocabRow } from "../../types";
+import type { AppPagesFunction, VocabRow } from "../../types";
 import { error, json } from "../../utils/http";
 import { getEnrichmentMap, toVocabItem } from "../../utils/vocab";
 
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+export const onRequestGet: AppPagesFunction = async (context) => {
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status");
   const sort = url.searchParams.get("sort") ?? "newest";

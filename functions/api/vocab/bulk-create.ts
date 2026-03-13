@@ -1,5 +1,4 @@
-import type { PagesFunction } from "@cloudflare/workers-types";
-import type { Env } from "../../types";
+import type { AppPagesFunction } from "../../types";
 import { parseLooseBulkInput } from "../../../shared/bulkImport";
 import { error, json } from "../../utils/http";
 import {
@@ -8,7 +7,7 @@ import {
   toVocabItem
 } from "../../utils/vocab";
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: AppPagesFunction = async (context) => {
   let body: unknown;
 
   try {

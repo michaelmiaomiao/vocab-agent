@@ -3,6 +3,9 @@
 # IDE settings
 .idea/
 .vscode/
+.wrangler/
+dist/
+node_modules/
 
 # Python environments and caches
 .venv/
@@ -13,6 +16,8 @@ __pycache__/
 # Secrets and local environment files
 .env
 .env.*
+.dev.vars
+.dev.vars.*
 *.pem
 *.key
 *.p12
@@ -20,4 +25,3 @@ passcode
 passcode.*
 secret
 secret.*
-

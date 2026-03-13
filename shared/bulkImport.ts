@@ -25,6 +25,10 @@ function isHeading(line: string) {
   return /^(#{1,6}\s+.+|\[[^\]]+\].+)$/.test(line);
 }
 
+function looksLikeNoise(line: string) {
+  return /^[_=]{3,}$/.test(line) || /^https?:\/\//i.test(line);
+}
+
 function cleanHeading(line: string) {
   return normalizeWhitespace(
     line.replace(/^#{1,6}\s*/, "").replace(/^\[[^\]]+\]\s*/, "")
@@ -80,6 +84,10 @@ export function parseLooseBulkInput(rawText: string): BulkImportPreview {
     const trimmed = rawLine.trim();
 
     if (!trimmed) {
+      return;
+    }
+
+    if (looksLikeNoise(trimmed)) {
       return;
     }
 

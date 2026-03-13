@@ -18,6 +18,7 @@ export function HomePage() {
   const [items, setItems] = useState<VocabItem[]>([]);
   const [filter, setFilter] = useState<ReviewStatus | "all">("all");
   const [sort, setSort] = useState<"newest" | "smart">("smart");
+  const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,6 +76,13 @@ export function HomePage() {
     }
   }
 
+  function toggleExpanded(id: number) {
+    setExpandedItems((current) => ({
+      ...current,
+      [id]: !current[id]
+    }));
+  }
+
   return (
     <section className="panel">
       <div className="panel-header">
@@ -130,62 +138,86 @@ export function HomePage() {
               </time>
             </div>
             <h3>{item.phrase_text}</h3>
-            {item.note ? <p>{item.note}</p> : null}
-            <dl className="meta-grid">
-              <div>
-                <dt>Tags</dt>
-                <dd>{item.tags.length ? item.tags.join(", ") : "-"}</dd>
-              </div>
-              <div>
-                <dt>Source</dt>
-                <dd>{item.source || "-"}</dd>
-              </div>
-              <div>
-                <dt>Meaning</dt>
-                <dd>{item.meaning || "-"}</dd>
-              </div>
-              <div>
-                <dt>Group</dt>
-                <dd>{item.group_label || "-"}</dd>
-              </div>
-              <div>
-                <dt>Synonyms</dt>
-                <dd>{item.synonyms.length ? item.synonyms.join(", ") : "-"}</dd>
-              </div>
-            </dl>
-            {item.ai_enrichment ? (
+            <p className="compact-meta">
+              {item.group_label || "ungrouped"} | {item.tags.length ? item.tags.join(", ") : "no tags"}
+            </p>
+            {item.note ? <p className="compact-note">{item.note}</p> : null}
+            {expandedItems[item.id] ? (
+              <>
+                <dl className="meta-grid">
+                  <div>
+                    <dt>Tags</dt>
+                    <dd>{item.tags.length ? item.tags.join(", ") : "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>Source</dt>
+                    <dd>{item.source || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>Meaning</dt>
+                    <dd>{item.meaning || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>Group</dt>
+                    <dd>{item.group_label || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>Synonyms</dt>
+                    <dd>{item.synonyms.length ? item.synonyms.join(", ") : "-"}</dd>
+                  </div>
+                </dl>
+                {item.ai_enrichment ? (
+                  <div className="ai-box">
+                    <p className="section-kicker">AI Suggestions</p>
+                    <p className="muted">
+                      Intent: {item.ai_enrichment.usage_intent || "-"} | Difficulty:{" "}
+                      {item.ai_enrichment.difficulty} | Priority:{" "}
+                      {item.ai_enrichment.review_priority}
+                    </p>
+                    <p>
+                      Correction: {item.ai_enrichment.suggested_correction || "-"}
+                    </p>
+                    <p className="muted">
+                      {item.ai_enrichment.correction_notes || "No correction note"}
+                    </p>
+                    <p>
+                      Suggested group: {item.ai_enrichment.suggested_group_label || "-"}
+                    </p>
+                    <p>
+                      Suggested synonyms:{" "}
+                      {item.ai_enrichment.suggested_synonyms.length
+                        ? item.ai_enrichment.suggested_synonyms.join(", ")
+                        : "-"}
+                    </p>
+                    <p>
+                      Suggested antonyms:{" "}
+                      {item.ai_enrichment.suggested_antonyms.length
+                        ? item.ai_enrichment.suggested_antonyms.join(", ")
+                        : "-"}
+                    </p>
+                    <p>
+                      Example sentence:{" "}
+                      {item.ai_enrichment.suggested_example_sentence || "-"}
+                    </p>
+                    <p className="muted">
+                      Context: {item.ai_enrichment.suggested_example_context || "-"}
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+            {!expandedItems[item.id] && item.ai_enrichment?.suggested_correction ? (
               <div className="ai-box">
-                <p className="section-kicker">AI Suggestions</p>
-                <p className="muted">
-                  Intent: {item.ai_enrichment.usage_intent || "-"} | Difficulty:{" "}
-                  {item.ai_enrichment.difficulty} | Priority:{" "}
-                  {item.ai_enrichment.review_priority}
-                </p>
-                <p>
-                  Suggested group: {item.ai_enrichment.suggested_group_label || "-"}
-                </p>
-                <p>
-                  Suggested synonyms:{" "}
-                  {item.ai_enrichment.suggested_synonyms.length
-                    ? item.ai_enrichment.suggested_synonyms.join(", ")
-                    : "-"}
-                </p>
-                <p>
-                  Suggested antonyms:{" "}
-                  {item.ai_enrichment.suggested_antonyms.length
-                    ? item.ai_enrichment.suggested_antonyms.join(", ")
-                    : "-"}
-                </p>
-                <p>
-                  Example sentence:{" "}
-                  {item.ai_enrichment.suggested_example_sentence || "-"}
-                </p>
-                <p className="muted">
-                  Context: {item.ai_enrichment.suggested_example_context || "-"}
+                <p className="section-kicker">AI Snapshot</p>
+                <p className="compact-note">
+                  {item.ai_enrichment.suggested_correction}
                 </p>
               </div>
             ) : null}
             <div className="action-row">
+              <button className="ghost-button" onClick={() => toggleExpanded(item.id)}>
+                {expandedItems[item.id] ? "Less" : "More"}
+              </button>
               <button className="ghost-button" onClick={() => void handleEnrich(item.id)}>
                 AI enrich
               </button>

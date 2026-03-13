@@ -195,6 +195,8 @@ export function generateHeuristicEnrichment(item: VocabItem): Omit<AiEnrichment,
 
   return {
     normalized_phrase: normalizePhrase(item.phrase_text),
+    suggested_correction: item.phrase_text,
+    correction_notes: "Heuristic fallback only. Add an OpenAI API key for real grammar and phrasing suggestions.",
     suggested_meaning: inferMeaning(item),
     suggested_group_label: group,
     suggested_synonyms: inferSynonyms(item),

@@ -1,5 +1,4 @@
-import type { PagesFunction } from "@cloudflare/workers-types";
-import type { Env, VocabRow } from "../../types";
+import type { AppPagesFunction, Env, VocabRow } from "../../types";
 import { error, json } from "../../utils/http";
 import {
   getItemWithEnrichment,
@@ -15,7 +14,16 @@ interface RouteContext {
   };
 }
 
-async function loadItem(context: RouteContext) {
+type LoadedItem =
+  | {
+      errorResponse: Response;
+    }
+  | {
+      id: number;
+      row: VocabRow;
+    };
+
+async function loadItem(context: RouteContext): Promise<LoadedItem> {
   const id = Number(context.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
@@ -33,7 +41,7 @@ async function loadItem(context: RouteContext) {
   return { id, row };
 }
 
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+export const onRequestGet: AppPagesFunction = async (context) => {
   const loaded = await loadItem(context as unknown as RouteContext);
   if ("errorResponse" in loaded) return loaded.errorResponse;
   const item = await getItemWithEnrichment(context.env.DB, loaded.id);
@@ -41,7 +49,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   return json(item);
 };
 
-export const onRequestPatch: PagesFunction<Env> = async (context) => {
+export const onRequestPatch: AppPagesFunction = async (context) => {
   const loaded = await loadItem(context as unknown as RouteContext);
   if ("errorResponse" in loaded) return loaded.errorResponse;
 
@@ -56,7 +64,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     (body ?? {}) as Record<string, unknown>
   );
 
-  if ("error" in parsed) {
+  if ("error" in parsed && parsed.error) {
     return error(parsed.error);
   }
 
@@ -115,7 +123,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   return json(item);
 };
 
-export const onRequestDelete: PagesFunction<Env> = async (context) => {
+export const onRequestDelete: AppPagesFunction = async (context) => {
   const loaded = await loadItem(context as unknown as RouteContext);
   if ("errorResponse" in loaded) return loaded.errorResponse;
 

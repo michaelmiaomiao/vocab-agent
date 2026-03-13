@@ -22,6 +22,8 @@ CREATE INDEX IF NOT EXISTS idx_vocab_items_created_at
 CREATE TABLE IF NOT EXISTS vocab_ai_enrichment (
   item_id INTEGER PRIMARY KEY,
   normalized_phrase TEXT NOT NULL,
+  suggested_correction TEXT,
+  correction_notes TEXT,
   suggested_meaning TEXT,
   suggested_group_label TEXT,
   suggested_synonyms TEXT,

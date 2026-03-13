@@ -38,6 +38,8 @@ export interface VocabListResponse {
 export interface AiEnrichment {
   item_id: number;
   normalized_phrase: string;
+  suggested_correction: string | null;
+  correction_notes: string | null;
   suggested_meaning: string | null;
   suggested_group_label: string | null;
   suggested_synonyms: string[];

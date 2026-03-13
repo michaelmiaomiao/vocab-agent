@@ -88,7 +88,9 @@ Bulk import behavior:
 
 AI enrichment behavior:
 
-- Generates heuristic suggestions for `group_label`, `meaning`, `synonyms`, `antonyms`
+- Uses OpenAI when `OPENAI_API_KEY` is configured, with heuristic fallback otherwise
+- Generates correction suggestions for spelling, grammar, and more natural phrasing
+- Generates suggestions for `group_label`, `meaning`, `synonyms`, `antonyms`
 - Generates an example sentence tuned for business, data, or engineering contexts
 - Computes a `smart_score` used for smart ordering in list and review pages
 - Keeps AI suggestions separate until you click `Apply AI`
@@ -128,6 +130,13 @@ npm run build
 npm run cf:dev
 ```
 
+If you want real LLM enrichment locally, create a `.dev.vars` file:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
+```
+
 For frontend-only iteration:
 
 ```bash
@@ -141,7 +150,19 @@ npm run dev
 3. Set build command to `npm run build`.
 4. Set build output directory to `dist`.
 5. Add the D1 binding named `DB`.
-6. Put Cloudflare Access in front of the deployed app.
+6. Add an `OPENAI_API_KEY` secret if you want real LLM enrichment:
+
+```bash
+npx wrangler secret put OPENAI_API_KEY
+```
+
+Optional model override:
+
+```bash
+npx wrangler secret put OPENAI_MODEL
+```
+
+7. Put Cloudflare Access in front of the deployed app.
 
 ## Notes
 
@@ -150,6 +171,6 @@ npm run dev
   Bulk Import to actually save it into D1.
 - `mark as reviewed` currently keeps the item in `learning`, which is a minimal
   V1 behavior without spaced repetition.
-- Current AI enrichment is heuristic and provider-agnostic. It is designed so a
-  real LLM call can replace or augment it later without changing the UI model.
+- Current AI enrichment uses OpenAI if configured and falls back to heuristic
+  suggestions when no API key is present or the request fails.
 - V2 can add Telegram, email reminders, semantic grouping, and LLM synonym generation.

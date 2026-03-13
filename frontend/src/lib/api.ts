@@ -17,8 +17,20 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json()) as { error?: string; message?: string };
+      throw new Error(payload.error || payload.message || "Request failed");
+    }
+
     const message = await response.text();
-    throw new Error(message || "Request failed");
+    const compact = message
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 220);
+    throw new Error(compact || `Request failed with status ${response.status}`);
   }
 
   if (response.status === 204) {
