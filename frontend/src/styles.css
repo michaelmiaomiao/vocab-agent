@@ -154,6 +154,27 @@ main {
   margin-bottom: 16px;
 }
 
+.inventory-count {
+  display: grid;
+  gap: 2px;
+  min-width: 110px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.76);
+  text-align: right;
+}
+
+.inventory-count .section-kicker {
+  margin-bottom: 0;
+}
+
+.inventory-count strong {
+  font-family: "Fraunces", serif;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
 .filter-row,
 .action-row {
   display: flex;

@@ -110,6 +110,10 @@ function getSearchScore(item: VocabItem, rawQuery: string) {
   return score;
 }
 
+function normalizeComparableText(value: string | null | undefined) {
+  return (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 function groupItems(items: VocabItem[], mode: ViewMode) {
   if (mode === "newest") {
     return [{ label: "Latest", items }];
@@ -372,6 +376,10 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
           <p className="section-kicker">Vocabulary List</p>
           <h2>{favoritesOnly ? "Favorite phrases" : "Saved phrases"}</h2>
         </div>
+        <div className="inventory-count">
+          <p className="section-kicker">Inventory</p>
+          <strong>{visibleItems.length}</strong>
+        </div>
         {favoritesOnly ? null : (
           <div className="filter-row">
             {filters.map((option) => (
@@ -473,8 +481,13 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                     {item.group_label || item.ai_enrichment?.suggested_group_label || "ungrouped"}
                     {item.source ? ` | ${item.source}` : ""}
                   </p>
-                  {item.meaning ? <p className="compact-note">{item.meaning}</p> : null}
                   {item.note ? <p className="compact-note">{item.note}</p> : null}
+                  {item.meaning &&
+                  normalizeComparableText(item.meaning) !== normalizeComparableText(item.note) &&
+                  normalizeComparableText(item.meaning) !==
+                    normalizeComparableText(item.ai_enrichment?.suggested_meaning) ? (
+                    <p className="compact-note">{item.meaning}</p>
+                  ) : null}
                   {item.ai_enrichment ? (
                     <div className="ai-box">
                       <p className="section-kicker">AI Snapshot</p>
