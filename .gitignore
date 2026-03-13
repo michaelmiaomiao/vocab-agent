@@ -1,0 +1,23 @@
+.DS_Store
+
+# IDE settings
+.idea/
+.vscode/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Secrets and local environment files
+.env
+.env.*
+*.pem
+*.key
+*.p12
+passcode
+passcode.*
+secret
+secret.*
+
