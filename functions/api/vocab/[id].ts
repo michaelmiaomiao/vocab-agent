@@ -2,6 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types";
 import type { Env, VocabRow } from "../../types";
 import { error, json } from "../../utils/http";
 import {
+  getItemWithEnrichment,
   sanitizeUpdatePayload,
   serializeList,
   toVocabItem
@@ -35,7 +36,9 @@ async function loadItem(context: RouteContext) {
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const loaded = await loadItem(context as unknown as RouteContext);
   if ("errorResponse" in loaded) return loaded.errorResponse;
-  return json(toVocabItem(loaded.row));
+  const item = await getItemWithEnrichment(context.env.DB, loaded.id);
+  if (!item) return error("Item not found", 404);
+  return json(item);
 };
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
@@ -107,7 +110,9 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     return error("Failed to fetch updated item", 500);
   }
 
-  return json(toVocabItem(updated));
+  const item = await getItemWithEnrichment(context.env.DB, loaded.id);
+  if (!item) return error("Failed to fetch updated item", 500);
+  return json(item);
 };
 
 export const onRequestDelete: PagesFunction<Env> = async (context) => {

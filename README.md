@@ -14,8 +14,11 @@ Functions, and D1.
 ## MVP Features
 
 - Capture page for new phrases with note, tags, source, meaning, synonyms, and group label
+- Bulk import page for loose vocab notes and expression lists
 - Vocabulary list page with newest-first ordering and status filtering
 - Review page for learning items with review-state actions
+- Smart ordering mode for review priority
+- AI suggestion flow for grouping, meanings, synonyms, antonyms, and example sentences
 - CRUD API for `vocab_items`
 - D1 schema with `new`, `learning`, and `mastered` review states
 
@@ -45,6 +48,9 @@ vocab-agent/
 ## API Routes
 
 - `POST /api/vocab/create`
+- `POST /api/vocab/bulk-create`
+- `POST /api/vocab/:id/enrich`
+- `POST /api/vocab/:id/apply-ai`
 - `GET /api/vocab/list`
 - `GET /api/vocab/:id`
 - `PATCH /api/vocab/:id`
@@ -63,6 +69,29 @@ Example create payload:
   "group_label": "meeting communication"
 }
 ```
+
+Example bulk import payload:
+
+```json
+{
+  "raw_text": "[IV] Business English\n- Contingent on 视什么而定\n- Bridge the gap\n## 动词\n- dive deeper 更详细地分析"
+}
+```
+
+Bulk import behavior:
+
+- Heading lines such as `[IV] Business English` or `## 动词` become `group_label`
+- Bullet lines become vocab entries
+- Inline Chinese text or text after ` - ` becomes `note`
+- Slash-separated variants such as `A / B / C` become one phrase plus synonyms
+- Existing identical `phrase_text` values are skipped during import
+
+AI enrichment behavior:
+
+- Generates heuristic suggestions for `group_label`, `meaning`, `synonyms`, `antonyms`
+- Generates an example sentence tuned for business, data, or engineering contexts
+- Computes a `smart_score` used for smart ordering in list and review pages
+- Keeps AI suggestions separate until you click `Apply AI`
 
 ## Database Setup
 
@@ -117,6 +146,10 @@ npm run dev
 ## Notes
 
 - `tags` and `synonyms` are stored as JSON text in D1 for easy future expansion.
+- The phrase list you paste into chat is not stored automatically. Paste it into
+  Bulk Import to actually save it into D1.
 - `mark as reviewed` currently keeps the item in `learning`, which is a minimal
   V1 behavior without spaced repetition.
+- Current AI enrichment is heuristic and provider-agnostic. It is designed so a
+  real LLM call can replace or augment it later without changing the UI model.
 - V2 can add Telegram, email reminders, semantic grouping, and LLM synonym generation.

@@ -1,4 +1,5 @@
 export type ReviewStatus = "new" | "learning" | "mastered";
+export type DifficultyLevel = "easy" | "medium" | "hard";
 
 export interface VocabPayload {
   phrase_text: string;
@@ -26,8 +27,36 @@ export interface VocabItem {
   review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
+  ai_enrichment: AiEnrichment | null;
+  smart_score: number;
 }
 
 export interface VocabListResponse {
   items: VocabItem[];
+}
+
+export interface AiEnrichment {
+  item_id: number;
+  normalized_phrase: string;
+  suggested_meaning: string | null;
+  suggested_group_label: string | null;
+  suggested_synonyms: string[];
+  suggested_antonyms: string[];
+  suggested_example_sentence: string | null;
+  suggested_example_context: string | null;
+  usage_intent: string | null;
+  difficulty: DifficultyLevel;
+  review_priority: number;
+  confidence: number;
+  suggestion_source: string;
+  suggested_at: string;
+  accepted_at: string | null;
+}
+
+export interface BulkCreateResponse {
+  created: VocabItem[];
+  skipped: Array<{
+    raw_line: string;
+    reason: string;
+  }>;
 }

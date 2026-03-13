@@ -1,14 +1,19 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import type { Env, VocabRow } from "../../types";
 import { error, json } from "../../utils/http";
-import { toVocabItem } from "../../utils/vocab";
+import { getEnrichmentMap, toVocabItem } from "../../utils/vocab";
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status");
+  const sort = url.searchParams.get("sort") ?? "newest";
 
   if (status && !["new", "learning", "mastered"].includes(status)) {
     return error("Invalid status filter");
+  }
+
+  if (!["newest", "smart"].includes(sort)) {
+    return error("Invalid sort");
   }
 
   const query = status
@@ -20,7 +25,18 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     ? await statement.bind(status).all<VocabRow>()
     : await statement.all<VocabRow>();
 
+  const items = rows.results ?? [];
+  const enrichmentMap = await getEnrichmentMap(
+    context.env.DB,
+    items.map((row) => row.id)
+  );
+  const merged = items.map((row) => toVocabItem(row, enrichmentMap.get(row.id) ?? null));
+
+  if (sort === "smart") {
+    merged.sort((left, right) => right.smart_score - left.smart_score);
+  }
+
   return json({
-    items: (rows.results ?? []).map(toVocabItem)
+    items: merged
   });
 };

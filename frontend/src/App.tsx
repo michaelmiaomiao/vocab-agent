@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { CapturePage } from "./pages/CapturePage";
+import { BulkImportPage } from "./pages/BulkImportPage";
 import { ReviewPage } from "./pages/ReviewPage";
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
             List
           </NavLink>
           <NavLink to="/capture">Capture</NavLink>
+          <NavLink to="/bulk-import">Bulk Import</NavLink>
           <NavLink to="/review">Review</NavLink>
         </nav>
       </header>
@@ -27,6 +29,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/capture" element={<CapturePage />} />
+          <Route path="/bulk-import" element={<BulkImportPage />} />
           <Route path="/review" element={<ReviewPage />} />
         </Routes>
       </main>

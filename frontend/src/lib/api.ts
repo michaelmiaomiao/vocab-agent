@@ -1,4 +1,5 @@
 import type {
+  BulkCreateResponse,
   ReviewStatus,
   UpdateVocabItemInput,
   VocabItem,
@@ -28,8 +29,22 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 export function listVocab(status?: ReviewStatus | "all") {
-  const query = status && status !== "all" ? `?status=${status}` : "";
-  return request<VocabListResponse>(`/api/vocab/list${query}`);
+  const query = status && status !== "all" ? `status=${status}` : "";
+  const suffix = query ? `?${query}` : "";
+  return request<VocabListResponse>(`/api/vocab/list${suffix}`);
+}
+
+export function listVocabSorted(
+  status: ReviewStatus | "all" | undefined,
+  sort: "newest" | "smart"
+) {
+  const params = new URLSearchParams();
+  if (status && status !== "all") {
+    params.set("status", status);
+  }
+  params.set("sort", sort);
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request<VocabListResponse>(`/api/vocab/list${suffix}`);
 }
 
 export function createVocabItem(payload: VocabPayload) {
@@ -53,5 +68,24 @@ export function updateVocabItem(id: number, payload: UpdateVocabItemInput) {
 export function deleteVocabItem(id: number) {
   return request<void>(`/api/vocab/${id}`, {
     method: "DELETE"
+  });
+}
+
+export function bulkCreateVocab(rawText: string) {
+  return request<BulkCreateResponse>("/api/vocab/bulk-create", {
+    method: "POST",
+    body: JSON.stringify({ raw_text: rawText })
+  });
+}
+
+export function enrichVocabItem(id: number) {
+  return request<VocabItem>(`/api/vocab/${id}/enrich`, {
+    method: "POST"
+  });
+}
+
+export function applyAiSuggestion(id: number) {
+  return request<VocabItem>(`/api/vocab/${id}/apply-ai`, {
+    method: "POST"
   });
 }

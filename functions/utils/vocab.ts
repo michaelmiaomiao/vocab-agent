@@ -1,5 +1,11 @@
-import type { VocabItem, VocabPayload, UpdateVocabItemInput } from "../../shared/types";
-import type { VocabRow } from "../types";
+import type {
+  AiEnrichment,
+  VocabItem,
+  VocabPayload,
+  UpdateVocabItemInput
+} from "../../shared/types";
+import type { VocabAiEnrichmentRow, VocabRow } from "../types";
+import { computeSmartScore } from "./enrichment";
 
 export function parseJsonList(value: string | null): string[] {
   if (!value) {
@@ -102,8 +108,122 @@ export function serializeList(value: string[]) {
   return JSON.stringify(value);
 }
 
-export function toVocabItem(row: VocabRow): VocabItem {
+export function toAiEnrichment(row: VocabAiEnrichmentRow): AiEnrichment {
   return {
+    item_id: row.item_id,
+    normalized_phrase: row.normalized_phrase,
+    suggested_meaning: row.suggested_meaning,
+    suggested_group_label: row.suggested_group_label,
+    suggested_synonyms: parseJsonList(row.suggested_synonyms),
+    suggested_antonyms: parseJsonList(row.suggested_antonyms),
+    suggested_example_sentence: row.suggested_example_sentence,
+    suggested_example_context: row.suggested_example_context,
+    usage_intent: row.usage_intent,
+    difficulty: row.difficulty,
+    review_priority: row.review_priority,
+    confidence: row.confidence,
+    suggestion_source: row.suggestion_source,
+    suggested_at: row.suggested_at,
+    accepted_at: row.accepted_at
+  };
+}
+
+export async function insertVocabItem(
+  db: D1Database,
+  input: {
+    phrase_text: string;
+    note: string | null;
+    tags: string[];
+    source: string | null;
+    meaning: string | null;
+    synonyms: string[];
+    group_label: string | null;
+    review_status: "new" | "learning" | "mastered";
+  }
+) {
+  const now = new Date().toISOString();
+  const result = await db
+    .prepare(
+      `INSERT INTO vocab_items (
+        phrase_text,
+        note,
+        tags,
+        source,
+        meaning,
+        synonyms,
+        group_label,
+        review_status,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      input.phrase_text,
+      input.note,
+      serializeList(input.tags),
+      input.source,
+      input.meaning,
+      serializeList(input.synonyms),
+      input.group_label,
+      input.review_status,
+      now,
+      now
+    )
+    .run();
+
+  return db
+    .prepare(`SELECT * FROM vocab_items WHERE id = ?`)
+    .bind(result.meta.last_row_id)
+    .first<VocabRow>();
+}
+
+export async function hasExistingPhrase(db: D1Database, phraseText: string) {
+  const existing = await db
+    .prepare(`SELECT id FROM vocab_items WHERE lower(phrase_text) = lower(?) LIMIT 1`)
+    .bind(phraseText)
+    .first<{ id: number }>();
+
+  return Boolean(existing);
+}
+
+export async function getEnrichmentMap(db: D1Database, itemIds: number[]) {
+  if (!itemIds.length) {
+    return new Map<number, VocabAiEnrichmentRow>();
+  }
+
+  const placeholders = itemIds.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(`SELECT * FROM vocab_ai_enrichment WHERE item_id IN (${placeholders})`)
+    .bind(...itemIds)
+    .all<VocabAiEnrichmentRow>();
+
+  return new Map((rows.results ?? []).map((row) => [row.item_id, row]));
+}
+
+export async function getItemWithEnrichment(db: D1Database, id: number) {
+  const row = await db
+    .prepare(`SELECT * FROM vocab_items WHERE id = ?`)
+    .bind(id)
+    .first<VocabRow>();
+
+  if (!row) {
+    return null;
+  }
+
+  const enrichment = await db
+    .prepare(`SELECT * FROM vocab_ai_enrichment WHERE item_id = ?`)
+    .bind(id)
+    .first<VocabAiEnrichmentRow>();
+
+  return toVocabItem(row, enrichment ?? null);
+}
+
+export function toVocabItem(
+  row: VocabRow,
+  enrichmentRow?: VocabAiEnrichmentRow | null
+): VocabItem {
+  const ai_enrichment = enrichmentRow ? toAiEnrichment(enrichmentRow) : null;
+  const base = {
     id: row.id,
     phrase_text: row.phrase_text,
     note: row.note,
@@ -115,5 +235,18 @@ export function toVocabItem(row: VocabRow): VocabItem {
     review_status: row.review_status,
     created_at: row.created_at,
     updated_at: row.updated_at
+  };
+
+  return {
+    ...base,
+    ai_enrichment,
+    smart_score: computeSmartScore(
+      {
+        ...base,
+        ai_enrichment: null,
+        smart_score: 0
+      },
+      ai_enrichment
+    )
   };
 }

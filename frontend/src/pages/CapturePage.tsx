@@ -57,6 +57,9 @@ export function CapturePage() {
           <p className="section-kicker">Quick Capture</p>
           <h2>Save a phrase fast</h2>
         </div>
+        <p className="muted">
+          Have a long note already? Use Bulk Import for loose pasted vocab lists.
+        </p>
       </div>
       <form className="capture-form" onSubmit={(event) => void handleSubmit(event)}>
         <label>

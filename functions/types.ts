@@ -1,4 +1,4 @@
-import type { ReviewStatus } from "../shared/types";
+import type { DifficultyLevel, ReviewStatus } from "../shared/types";
 
 export interface Env {
   DB: D1Database;
@@ -16,4 +16,22 @@ export interface VocabRow {
   review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
+}
+
+export interface VocabAiEnrichmentRow {
+  item_id: number;
+  normalized_phrase: string;
+  suggested_meaning: string | null;
+  suggested_group_label: string | null;
+  suggested_synonyms: string | null;
+  suggested_antonyms: string | null;
+  suggested_example_sentence: string | null;
+  suggested_example_context: string | null;
+  usage_intent: string | null;
+  difficulty: DifficultyLevel;
+  review_priority: number;
+  confidence: number;
+  suggestion_source: string;
+  suggested_at: string;
+  accepted_at: string | null;
 }
