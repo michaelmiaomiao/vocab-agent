@@ -473,6 +473,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                     {item.group_label || item.ai_enrichment?.suggested_group_label || "ungrouped"}
                     {item.source ? ` | ${item.source}` : ""}
                   </p>
+                  {item.meaning ? <p className="compact-note">{item.meaning}</p> : null}
                   {item.note ? <p className="compact-note">{item.note}</p> : null}
                   {item.ai_enrichment ? (
                     <div className="ai-box">

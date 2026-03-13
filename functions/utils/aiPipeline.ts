@@ -97,12 +97,18 @@ export async function persistSuggestionAndApply(
   await env.DB.prepare(
     `UPDATE vocab_items
       SET phrase_text = COALESCE(?, phrase_text),
-          meaning = COALESCE(?, meaning),
+          meaning = CASE
+            WHEN meaning IS NULL OR trim(meaning) = '' THEN COALESCE(?, meaning)
+            ELSE meaning
+          END,
           synonyms = CASE
             WHEN ? IS NOT NULL AND ? != '[]' THEN ?
             ELSE synonyms
           END,
-          group_label = COALESCE(?, group_label),
+          group_label = CASE
+            WHEN group_label IS NULL OR trim(group_label) = '' THEN COALESCE(?, group_label)
+            ELSE group_label
+          END,
           updated_at = ?
       WHERE id = ?`
   )
