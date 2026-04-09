@@ -1,6 +1,6 @@
 import type { AppPagesFunction, VocabAiEnrichmentRow } from "../../../types";
 import { error, json } from "../../../utils/http";
-import { getItemWithEnrichment } from "../../../utils/vocab";
+import { getItemWithEnrichment, getNormalizedPhrase } from "../../../utils/vocab";
 
 export const onRequestPost: AppPagesFunction = async (context) => {
   const id = Number(context.params.id);
@@ -22,6 +22,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
   await context.env.DB.prepare(
     `UPDATE vocab_items
       SET phrase_text = COALESCE(?, phrase_text),
+          normalized_phrase = COALESCE(?, normalized_phrase),
           meaning = COALESCE(?, meaning),
           synonyms = CASE
             WHEN ? IS NOT NULL AND ? != '[]' THEN ?
@@ -33,6 +34,9 @@ export const onRequestPost: AppPagesFunction = async (context) => {
   )
     .bind(
       enrichment.suggested_correction,
+      enrichment.suggested_correction
+        ? getNormalizedPhrase(enrichment.suggested_correction)
+        : null,
       enrichment.suggested_meaning,
       enrichment.suggested_synonyms,
       enrichment.suggested_synonyms,

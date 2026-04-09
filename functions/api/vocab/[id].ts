@@ -1,6 +1,7 @@
 import type { AppPagesFunction, Env, VocabRow } from "../../types";
 import { error, json } from "../../utils/http";
 import {
+  getNormalizedPhrase,
   getItemWithEnrichment,
   sanitizeUpdatePayload,
   serializeList,
@@ -82,6 +83,7 @@ export const onRequestPatch: AppPagesFunction = async (context) => {
   await context.env.DB.prepare(
     `UPDATE vocab_items
       SET phrase_text = ?,
+          normalized_phrase = ?,
           note = ?,
           tags = ?,
           source = ?,
@@ -95,6 +97,7 @@ export const onRequestPatch: AppPagesFunction = async (context) => {
   )
     .bind(
       parsed.value.phrase_text ?? loaded.row.phrase_text,
+      getNormalizedPhrase(parsed.value.phrase_text ?? loaded.row.phrase_text),
       parsed.value.note !== undefined ? parsed.value.note : loaded.row.note,
       nextTags,
       parsed.value.source !== undefined ? parsed.value.source : loaded.row.source,

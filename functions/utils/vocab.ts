@@ -41,6 +41,10 @@ export function normalizePhraseKey(value: string) {
     .trim();
 }
 
+export function getNormalizedPhrase(value: string) {
+  return normalizePhraseKey(value);
+}
+
 export function normalizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -168,6 +172,7 @@ export async function insertVocabItem(
     .prepare(
       `INSERT INTO vocab_items (
         phrase_text,
+        normalized_phrase,
         note,
         tags,
         source,
@@ -182,6 +187,7 @@ export async function insertVocabItem(
     )
     .bind(
       input.phrase_text,
+      getNormalizedPhrase(input.phrase_text),
       input.note,
       serializeList(input.tags),
       input.source,
@@ -207,11 +213,26 @@ export async function hasExistingPhrase(db: D1Database, phraseText: string) {
 }
 
 export async function findExistingPhrase(db: D1Database, phraseText: string) {
+  const target = normalizePhraseKey(phraseText);
+  const existing = await db
+    .prepare(
+      `SELECT * FROM vocab_items
+        WHERE normalized_phrase = ?
+           OR (normalized_phrase IS NULL AND phrase_text = ?)
+        ORDER BY id ASC
+        LIMIT 1`
+    )
+    .bind(target, phraseText)
+    .first<VocabRow>();
+
+  if (existing) {
+    return existing;
+  }
+
   const rows = await db
-    .prepare(`SELECT * FROM vocab_items`)
+    .prepare(`SELECT * FROM vocab_items WHERE normalized_phrase IS NULL`)
     .all<VocabRow>();
 
-  const target = normalizePhraseKey(phraseText);
   return (rows.results ?? []).find(
     (row) => normalizePhraseKey(row.phrase_text) === target
   ) ?? null;

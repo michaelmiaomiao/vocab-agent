@@ -2,6 +2,7 @@ import type { AppPagesFunction, VocabRow } from "../../../types";
 import { error, json } from "../../../utils/http";
 import {
   findExistingPhrase,
+  getNormalizedPhrase,
   getItemWithEnrichment,
   parseJsonList,
   serializeList
@@ -95,6 +96,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
           group_label = ?,
           review_status = ?,
           favorite = ?,
+          normalized_phrase = ?,
           updated_at = ?
       WHERE id = ?`
   )
@@ -106,6 +108,7 @@ export const onRequestPost: AppPagesFunction = async (context) => {
       target.group_label ?? source.group_label,
       mergeReviewStatus(target.review_status, source.review_status),
       target.favorite || source.favorite ? 1 : 0,
+      getNormalizedPhrase(target.phrase_text),
       new Date().toISOString(),
       target.id
     )

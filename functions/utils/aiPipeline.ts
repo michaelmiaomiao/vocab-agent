@@ -1,7 +1,7 @@
 import type { Env } from "../types";
 import { generateHeuristicEnrichment } from "./enrichment";
 import { generateLlmEnrichment } from "./llm";
-import { getItemWithEnrichment } from "./vocab";
+import { getItemWithEnrichment, getNormalizedPhrase } from "./vocab";
 
 export async function buildSuggestionForItem(
   env: Env,
@@ -97,6 +97,7 @@ export async function persistSuggestionAndApply(
   await env.DB.prepare(
     `UPDATE vocab_items
       SET phrase_text = COALESCE(?, phrase_text),
+          normalized_phrase = COALESCE(?, normalized_phrase),
           meaning = CASE
             WHEN meaning IS NULL OR trim(meaning) = '' THEN COALESCE(?, meaning)
             ELSE meaning
@@ -114,6 +115,9 @@ export async function persistSuggestionAndApply(
   )
     .bind(
       suggestion.suggested_correction,
+      suggestion.suggested_correction
+        ? getNormalizedPhrase(suggestion.suggested_correction)
+        : null,
       suggestion.suggested_meaning,
       JSON.stringify(suggestion.suggested_synonyms),
       JSON.stringify(suggestion.suggested_synonyms),

@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS vocab_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   phrase_text TEXT NOT NULL,
+  normalized_phrase TEXT NOT NULL,
   note TEXT,
   tags TEXT,
   source TEXT,
@@ -19,6 +20,9 @@ CREATE INDEX IF NOT EXISTS idx_vocab_items_review_status
 
 CREATE INDEX IF NOT EXISTS idx_vocab_items_created_at
   ON vocab_items (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_vocab_items_normalized_phrase
+  ON vocab_items (normalized_phrase);
 
 CREATE TABLE IF NOT EXISTS vocab_ai_enrichment (
   item_id INTEGER PRIMARY KEY,

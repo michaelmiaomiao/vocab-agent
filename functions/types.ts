@@ -18,6 +18,7 @@ export type AppPagesFunction<Params extends Record<string, string> = Record<stri
 export interface VocabRow {
   id: number;
   phrase_text: string;
+  normalized_phrase: string | null;
   note: string | null;
   tags: string | null;
   source: string | null;
