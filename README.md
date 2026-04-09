@@ -137,11 +137,35 @@ OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
+You can copy the checked-in example first:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
 For frontend-only iteration:
 
 ```bash
 npm run dev
 ```
+
+## Testing
+
+Run the core engineering checks before pushing:
+
+```bash
+npm run typecheck
+npm run test:run
+npm run build
+```
+
+Current automated coverage focuses on:
+
+- bulk import parsing
+- phrase normalization and payload sanitization
+- heuristic enrichment and smart score behavior
+
+GitHub Actions runs the same checks on pushes to `main` and on pull requests.
 
 ## Deployment
 

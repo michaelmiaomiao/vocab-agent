@@ -114,6 +114,58 @@ function normalizeComparableText(value: string | null | undefined) {
   return (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function escapeCsvCell(value: string | number | boolean | null | undefined) {
+  const normalized = value == null ? "" : String(value);
+  const escaped = normalized.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
+function buildCsvContent(items: VocabItem[]) {
+  const headers = [
+    "id",
+    "phrase_text",
+    "meaning",
+    "note",
+    "group_label",
+    "source",
+    "tags",
+    "synonyms",
+    "review_status",
+    "favorite",
+    "smart_score",
+    "ai_suggested_meaning",
+    "ai_suggested_example_sentence",
+    "ai_suggested_group_label",
+    "ai_suggested_word_type",
+    "created_at",
+    "updated_at"
+  ];
+
+  const rows = items.map((item) =>
+    [
+      item.id,
+      item.phrase_text,
+      item.meaning,
+      item.note,
+      item.group_label,
+      item.source,
+      item.tags.join(", "),
+      item.synonyms.join(", "),
+      item.review_status,
+      item.favorite,
+      item.smart_score,
+      item.ai_enrichment?.suggested_meaning,
+      item.ai_enrichment?.suggested_example_sentence,
+      item.ai_enrichment?.suggested_group_label,
+      item.ai_enrichment?.suggested_word_type,
+      item.created_at,
+      item.updated_at
+    ].map(escapeCsvCell).join(",")
+  );
+
+  return [headers.map(escapeCsvCell).join(","), ...rows].join("\n");
+}
+
 function groupItems(items: VocabItem[], mode: ViewMode) {
   if (mode === "newest") {
     return [{ label: "Latest", items }];
@@ -354,6 +406,29 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
   const visibleItems = filteredItems;
   const groupedItems = groupItems(visibleItems, viewMode);
 
+  function handleExportCsv() {
+    if (!visibleItems.length) {
+      setError("No items to export.");
+      return;
+    }
+
+    const csvContent = buildCsvContent(visibleItems);
+    const blob = new Blob(["\uFEFF", csvContent], {
+      type: "text/csv;charset=utf-8;"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateLabel = new Date().toISOString().slice(0, 10);
+    const scope = favoritesOnly ? "favorites" : "vocab";
+
+    link.href = url;
+    link.download = `${scope}-${dateLabel}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   async function handleToggleFavorite(item: VocabItem) {
     setBusyItems((current) => ({ ...current, [item.id]: "save" }));
 
@@ -379,6 +454,11 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
         <div className="inventory-count">
           <p className="section-kicker">Inventory</p>
           <strong>{visibleItems.length}</strong>
+        </div>
+        <div className="filter-row">
+          <button className="ghost-button" onClick={handleExportCsv} type="button">
+            Export CSV
+          </button>
         </div>
         {favoritesOnly ? null : (
           <div className="filter-row">
