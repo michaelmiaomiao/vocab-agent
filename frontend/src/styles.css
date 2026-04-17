@@ -107,6 +107,11 @@ a {
   max-width: 420px;
 }
 
+.accent-picker {
+  display: grid;
+  gap: 6px;
+}
+
 .hero-search input {
   width: 100%;
   border: 1px solid rgba(29, 29, 31, 0.12);
@@ -432,6 +437,18 @@ main {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+
+.inline-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mini-control {
+  padding: 4px 9px;
+  font-size: 0.78rem;
 }
 
 .star-button {

@@ -8,6 +8,12 @@ import {
   mergeVocabItem,
   updateVocabItem
 } from "../lib/api";
+import {
+  type PronunciationAccent,
+  speakText,
+  stopSpeaking,
+  supportsPronunciation
+} from "../lib/pronunciation";
 import type { ReviewStatus, VocabItem } from "@shared/types";
 
 const filters: Array<ReviewStatus | "all"> = [
@@ -21,6 +27,7 @@ type ViewMode = "newest" | "semantic" | "word_type";
 
 interface HomePageProps {
   favoritesOnly?: boolean;
+  pronunciationAccent: PronunciationAccent;
   searchQuery?: string;
 }
 
@@ -192,7 +199,11 @@ function groupItems(items: VocabItem[], mode: ViewMode) {
     }));
 }
 
-export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePageProps) {
+export function HomePage({
+  favoritesOnly = false,
+  pronunciationAccent,
+  searchQuery = ""
+}: HomePageProps) {
   const location = useLocation();
   const [items, setItems] = useState<VocabItem[]>([]);
   const [filter, setFilter] = useState<ReviewStatus | "all">("all");
@@ -202,6 +213,7 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
   const [editingItems, setEditingItems] = useState<Record<number, boolean>>({});
   const [busyItems, setBusyItems] = useState<Record<number, "save" | "delete" | "merge" | null>>({});
   const [deletingByDate, setDeletingByDate] = useState(false);
+  const [speakingItemId, setSpeakingItemId] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<
     Record<number, { phrase_text: string; meaning: string; note: string; group_label: string; source: string; merge_target: string }>
   >({});
@@ -444,6 +456,39 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
     }
   }
 
+  function handlePronounce(item: VocabItem) {
+    if (!supportsPronunciation()) {
+      setError("Pronunciation is not supported in this browser.");
+      return;
+    }
+
+    if (speakingItemId === item.id) {
+      stopSpeaking();
+      setSpeakingItemId(null);
+      return;
+    }
+
+    setError(null);
+    setSpeakingItemId(item.id);
+
+    const targetText =
+      item.ai_enrichment?.suggested_correction?.trim() || item.phrase_text;
+
+    const started = speakText(targetText, {
+      lang: pronunciationAccent,
+      onEnd: () => setSpeakingItemId((current) => (current === item.id ? null : current)),
+      onError: () => {
+        setSpeakingItemId((current) => (current === item.id ? null : current));
+        setError("Pronunciation playback failed.");
+      }
+    });
+
+    if (!started) {
+      setSpeakingItemId(null);
+      setError("Pronunciation is not supported in this browser.");
+    }
+  }
+
   return (
     <section className="panel">
       <div className="panel-header">
@@ -557,6 +602,15 @@ export function HomePage({ favoritesOnly = false, searchQuery = "" }: HomePagePr
                     <time>{new Date(item.created_at).toLocaleString()}</time>
                   </div>
                   <h3>{item.phrase_text}</h3>
+                  <div className="inline-tools">
+                    <button
+                      className="ghost-button mini-control"
+                      onClick={() => handlePronounce(item)}
+                      type="button"
+                    >
+                      {speakingItemId === item.id ? "Stop" : "Pronounce"}
+                    </button>
+                  </div>
                   <p className="compact-meta">
                     {item.group_label || item.ai_enrichment?.suggested_group_label || "ungrouped"}
                     {item.source ? ` | ${item.source}` : ""}

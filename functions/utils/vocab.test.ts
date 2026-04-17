@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getNormalizedPhrase,
+  insertVocabItem,
   parseJsonList,
   sanitizeCreatePayload,
   sanitizeUpdatePayload
@@ -51,5 +52,72 @@ describe("vocab utilities", () => {
     expect(sanitizeUpdatePayload({ phrase_text: "   " })).toEqual({
       error: "phrase_text cannot be empty"
     });
+  });
+
+  it("uses one placeholder per inserted vocab_items column", async () => {
+    let sql = "";
+    let bindArgs: unknown[] = [];
+
+    const db = {
+      prepare(statement: string) {
+        if (statement.includes("INSERT INTO vocab_items")) {
+          sql = statement;
+          return {
+            bind(...args: unknown[]) {
+              bindArgs = args;
+              return {
+                async run() {
+                  return {
+                    meta: { last_row_id: 1 }
+                  };
+                }
+              };
+            }
+          };
+        }
+
+        return {
+          bind(...args: unknown[]) {
+            return {
+              async first() {
+                return {
+                  id: Number(args[0]),
+                  phrase_text: "chase it up",
+                  normalized_phrase: "chase it up",
+                  note: null,
+                  tags: "[]",
+                  source: null,
+                  meaning: null,
+                  synonyms: "[]",
+                  group_label: null,
+                  review_status: "new",
+                  favorite: 0,
+                  created_at: "2026-04-14T00:00:00.000Z",
+                  updated_at: "2026-04-14T00:00:00.000Z"
+                };
+              }
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await insertVocabItem(db, {
+      phrase_text: "chase it up",
+      note: null,
+      tags: [],
+      source: null,
+      meaning: null,
+      synonyms: [],
+      group_label: null,
+      review_status: "new",
+      favorite: false
+    });
+
+    const valuesSection = sql.match(/VALUES \((.*)\)/s)?.[1] ?? "";
+    const placeholderCount = (valuesSection.match(/\?/g) ?? []).length;
+
+    expect(placeholderCount).toBe(bindArgs.length);
+    expect(bindArgs.length).toBe(12);
   });
 });

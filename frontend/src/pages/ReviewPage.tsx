@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 import { enrichVocabItem, listVocabSorted, updateVocabItem } from "../lib/api";
+import {
+  type PronunciationAccent,
+  speakText,
+  stopSpeaking,
+  supportsPronunciation
+} from "../lib/pronunciation";
 import type { VocabItem } from "@shared/types";
 
-export function ReviewPage() {
+interface ReviewPageProps {
+  pronunciationAccent: PronunciationAccent;
+}
+
+export function ReviewPage({ pronunciationAccent }: ReviewPageProps) {
   const [items, setItems] = useState<VocabItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [speakingItemId, setSpeakingItemId] = useState<number | null>(null);
 
   async function loadItems() {
     setLoading(true);
@@ -52,6 +63,39 @@ export function ReviewPage() {
     }
   }
 
+  function handlePronounce(item: VocabItem) {
+    if (!supportsPronunciation()) {
+      setError("Pronunciation is not supported in this browser.");
+      return;
+    }
+
+    if (speakingItemId === item.id) {
+      stopSpeaking();
+      setSpeakingItemId(null);
+      return;
+    }
+
+    setError(null);
+    setSpeakingItemId(item.id);
+
+    const targetText =
+      item.ai_enrichment?.suggested_correction?.trim() || item.phrase_text;
+
+    const started = speakText(targetText, {
+      lang: pronunciationAccent,
+      onEnd: () => setSpeakingItemId((current) => (current === item.id ? null : current)),
+      onError: () => {
+        setSpeakingItemId((current) => (current === item.id ? null : current));
+        setError("Pronunciation playback failed.");
+      }
+    });
+
+    if (!started) {
+      setSpeakingItemId(null);
+      setError("Pronunciation is not supported in this browser.");
+    }
+  }
+
   return (
     <section className="panel">
       <div className="panel-header">
@@ -73,6 +117,15 @@ export function ReviewPage() {
           <article key={item.id} className="review-card">
             <p className="review-group">{item.group_label || "Ungrouped"}</p>
             <h3>{item.phrase_text}</h3>
+            <div className="inline-tools">
+              <button
+                className="ghost-button mini-control"
+                onClick={() => handlePronounce(item)}
+                type="button"
+              >
+                {speakingItemId === item.id ? "Stop" : "Pronounce"}
+              </button>
+            </div>
             {item.note ? <p>{item.note}</p> : null}
             <p className="muted">
               Tags: {item.tags.length ? item.tags.join(", ") : "none"} | Smart score:{" "}
