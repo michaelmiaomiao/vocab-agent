@@ -25,6 +25,8 @@ const filters: Array<ReviewStatus | "all"> = [
 
 type ViewMode = "newest" | "semantic" | "word_type";
 
+const pageSizeOptions = [20, 40, 80];
+
 interface HomePageProps {
   favoritesOnly?: boolean;
   pronunciationAccent: PronunciationAccent;
@@ -208,6 +210,8 @@ export function HomePage({
   const [items, setItems] = useState<VocabItem[]>([]);
   const [filter, setFilter] = useState<ReviewStatus | "all">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("newest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(40);
   const [deleteDate, setDeleteDate] = useState("");
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   const [editingItems, setEditingItems] = useState<Record<number, boolean>>({});
@@ -256,6 +260,10 @@ export function HomePage({
   useEffect(() => {
     void loadItems(filter);
   }, [location.key]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, favoritesOnly, pageSize, searchQuery, viewMode]);
 
   useEffect(() => {
     function reloadOnFocus() {
@@ -415,16 +423,92 @@ export function HomePage({
     })
     .map(({ item }) => item);
 
-  const visibleItems = filteredItems;
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageEndIndex = Math.min(pageStartIndex + pageSize, filteredItems.length);
+  const visibleItems = filteredItems.slice(pageStartIndex, pageEndIndex);
   const groupedItems = groupItems(visibleItems, viewMode);
+  const shouldShowPagination = filteredItems.length > pageSizeOptions[0];
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  function renderPagination() {
+    if (!shouldShowPagination) {
+      return null;
+    }
+
+    return (
+      <div className="pagination-bar" aria-label="Pagination">
+        <p className="muted">
+          Showing {filteredItems.length ? pageStartIndex + 1 : 0}-{pageEndIndex} of{" "}
+          {filteredItems.length}
+        </p>
+        <div className="pagination-controls">
+          <button
+            className="ghost-button"
+            disabled={safeCurrentPage === 1}
+            onClick={() => setCurrentPage(1)}
+            type="button"
+          >
+            First
+          </button>
+          <button
+            className="ghost-button"
+            disabled={safeCurrentPage === 1}
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            type="button"
+          >
+            Prev
+          </button>
+          <span className="page-indicator">
+            Page {safeCurrentPage} / {totalPages}
+          </span>
+          <button
+            className="ghost-button"
+            disabled={safeCurrentPage === totalPages}
+            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            type="button"
+          >
+            Next
+          </button>
+          <button
+            className="ghost-button"
+            disabled={safeCurrentPage === totalPages}
+            onClick={() => setCurrentPage(totalPages)}
+            type="button"
+          >
+            Last
+          </button>
+          <label className="page-size-picker">
+            Per page
+            <select
+              value={pageSize}
+              onChange={(event) => setPageSize(Number(event.target.value))}
+            >
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    );
+  }
 
   function handleExportCsv() {
-    if (!visibleItems.length) {
+    if (!filteredItems.length) {
       setError("No items to export.");
       return;
     }
 
-    const csvContent = buildCsvContent(visibleItems);
+    const csvContent = buildCsvContent(filteredItems);
     const blob = new Blob(["\uFEFF", csvContent], {
       type: "text/csv;charset=utf-8;"
     });
@@ -498,7 +582,7 @@ export function HomePage({
         </div>
         <div className="inventory-count">
           <p className="section-kicker">Inventory</p>
-          <strong>{visibleItems.length}</strong>
+          <strong>{filteredItems.length}</strong>
         </div>
         <div className="filter-row">
           <button className="ghost-button" onClick={handleExportCsv} type="button">
@@ -561,7 +645,7 @@ export function HomePage({
 
       {error ? <p className="error-banner">{error}</p> : null}
       {loading ? <p className="muted">Loading phrases...</p> : null}
-      {!loading && visibleItems.length === 0 ? (
+      {!loading && filteredItems.length === 0 ? (
         <p className="muted">
           {favoritesOnly
             ? searchQuery
@@ -572,6 +656,8 @@ export function HomePage({
               : "No phrases yet. Capture one on the next tab."}
         </p>
       ) : null}
+
+      {renderPagination()}
 
       {groupedItems.map((group) => (
         <section className="group-section" key={group.label}>
@@ -813,6 +899,7 @@ export function HomePage({
           </div>
         </section>
       ))}
+      {renderPagination()}
     </section>
   );
 }

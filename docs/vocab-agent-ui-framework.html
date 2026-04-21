@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vocab Agent UI Framework Notes</title>
+    <style>
+      :root {
+        --ink: #1d1d1f;
+        --muted: #65676c;
+        --accent: #1746a2;
+        --accent-soft: #dfe9ff;
+        --panel: rgba(255, 255, 255, 0.76);
+        --panel-border: rgba(29, 29, 31, 0.08);
+        --shadow: 0 24px 80px rgba(32, 40, 62, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        font-family: "DM Sans", "Helvetica Neue", sans-serif;
+        line-height: 1.5;
+        background:
+          radial-gradient(circle at top left, rgba(255, 208, 142, 0.55), transparent 32%),
+          radial-gradient(circle at top right, rgba(141, 199, 255, 0.45), transparent 28%),
+          linear-gradient(180deg, #f7f2e8 0%, #f3f6fb 100%);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 20px 16px 48px;
+      }
+
+      .hero,
+      .panel,
+      .card {
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .hero {
+        display: grid;
+        gap: 20px;
+        padding: 22px;
+        border-radius: 28px;
+      }
+
+      .panel {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-family: "Fraunces", Georgia, serif;
+        letter-spacing: -0.03em;
+      }
+
+      h1 {
+        font-size: clamp(2.8rem, 6vw, 4.8rem);
+        line-height: 0.94;
+      }
+
+      .kicker {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .muted {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .nav,
+      .toolbar,
+      .actions,
+      .pagination-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip,
+      .button {
+        border: 1px solid var(--panel-border);
+        border-radius: 999px;
+        padding: 6px 11px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .chip.active,
+      .button.primary {
+        border-color: transparent;
+        color: white;
+        background: var(--accent);
+      }
+
+      .panel-header,
+      .pagination-bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .inventory-count,
+      .pagination-bar,
+      .card {
+        border-radius: 16px;
+        border: 1px solid rgba(29, 29, 31, 0.07);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .inventory-count {
+        min-width: 110px;
+        padding: 10px 14px;
+        text-align: right;
+      }
+
+      .inventory-count strong {
+        display: block;
+        font-family: "Fraunces", Georgia, serif;
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+
+      .pagination-bar {
+        margin: 12px 0;
+        padding: 10px 12px;
+      }
+
+      .page-indicator {
+        color: var(--muted);
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .page-size-picker {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .page-size-picker select,
+      .search input {
+        border: 1px solid rgba(29, 29, 31, 0.12);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.96);
+      }
+
+      .list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .meta {
+        margin: 1px 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .ai-box {
+        margin-top: 6px;
+        padding: 6px 8px;
+        border-radius: 10px;
+        border: 1px solid rgba(23, 70, 162, 0.12);
+        background: rgba(23, 70, 162, 0.06);
+      }
+
+      .notes {
+        display: grid;
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .notes article {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(29, 29, 31, 0.07);
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 6px;
+        background: rgba(29, 29, 31, 0.08);
+      }
+
+      pre {
+        overflow: auto;
+        padding: 14px;
+        border-radius: 14px;
+        background: #1d1d1f;
+        color: #f7f2e8;
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          padding: 20px 14px 48px;
+        }
+
+        .hero,
+        .panel {
+          padding: 20px;
+          border-radius: 22px;
+        }
+
+        .card {
+          grid-template-columns: 1fr;
+        }
+
+        .pagination-controls,
+        .pagination-controls .button,
+        .page-size-picker {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="kicker">Personal Productivity App</p>
+          <h1>Reusable App Frame</h1>
+          <p class="muted">
+            这个文件总结了 Vocab Agent 当前的页面骨架、视觉语言和列表分页模式。
+            做类似项目时，可以把这一页作为 prompt/context 给另一个项目。
+          </p>
+        </div>
+
+        <nav class="nav" aria-label="Main navigation">
+          <button class="chip active">List</button>
+          <button class="chip">Capture</button>
+          <button class="chip">Bulk Import</button>
+          <button class="chip">Review</button>
+        </nav>
+
+        <label class="search">
+          <p class="kicker">Search</p>
+          <input type="search" placeholder="Search title, note, tags, AI result..." />
+        </label>
+      </header>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="kicker">List Page Pattern</p>
+            <h2>Saved items</h2>
+          </div>
+
+          <div class="inventory-count">
+            <p class="kicker">Inventory</p>
+            <strong>128</strong>
+          </div>
+
+          <div class="toolbar">
+            <button class="button">Export CSV</button>
+            <button class="chip active">all</button>
+            <button class="chip">new</button>
+            <button class="chip">learning</button>
+            <button class="chip">mastered</button>
+          </div>
+        </div>
+
+        <div class="pagination-bar" aria-label="Pagination">
+          <p class="muted">Showing 41-80 of 128</p>
+          <div class="pagination-controls">
+            <button class="button">First</button>
+            <button class="button">Prev</button>
+            <span class="page-indicator">Page 2 / 4</span>
+            <button class="button primary">Next</button>
+            <button class="button">Last</button>
+            <label class="page-size-picker">
+              Per page
+              <select>
+                <option>20</option>
+                <option selected>40</option>
+                <option>80</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="list">
+          <article class="card">
+            <div>
+              <p class="kicker">new</p>
+              <h3>Bridge the gap</h3>
+              <p class="meta">meeting communication | source: notes</p>
+              <div class="ai-box">
+                <p class="meta">AI Snapshot</p>
+                <p>缩小差距；connect two different groups, ideas, or states.</p>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="button">More</button>
+              <button class="button">Modify</button>
+              <button class="button">Delete</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div>
+              <p class="kicker">learning</p>
+              <h3>Get the buy-in</h3>
+              <p class="meta">influence | source: work conversation</p>
+            </div>
+            <div class="actions">
+              <button class="button">More</button>
+              <button class="button">Modify</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="notes">
+        <article>
+          <h2>页面框架</h2>
+          <p>
+            使用 <code>.shell</code> 控制最大宽度；顶部 <code>.hero</code> 放产品名、
+            主导航、全局搜索和少量全局偏好；下面每个主功能用 <code>.panel</code>。
+            这种结构适合个人工具、知识库、任务流、收藏夹、学习类 app。
+          </p>
+        </article>
+
+        <article>
+          <h2>列表页模式</h2>
+          <p>
+            推荐顺序是：先加载数据，再做状态过滤/收藏过滤，再做搜索排序，再分页。
+            CSV 导出应该导出过滤后的全集，而不是当前页，避免用户误以为导出了全部结果。
+          </p>
+          <pre><code>const filteredItems = items
+  .filter(byScope)
+  .filter(bySearch)
+  .sort(bySearchScoreOrNewest);
+
+const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+const visibleItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);</code></pre>
+        </article>
+
+        <article>
+          <h2>分页组件要点</h2>
+          <p>
+            显示当前范围、总数、当前页、总页数；提供 First/Prev/Next/Last；
+            支持每页数量切换；搜索、过滤、视图模式变化时回到第 1 页；数据减少时把页码 clamp 到最大页。
+          </p>
+        </article>
+
+        <article>
+          <h2>视觉语言</h2>
+          <p>
+            这个项目使用暖色到冷色的柔和背景、半透明玻璃 panel、圆角 pill controls、
+            serif 大标题和紧凑列表。核心原则是：主界面轻、卡片密度高、工具按钮小而明确。
+          </p>
+        </article>
+
+        <article>
+          <h2>可复用组件清单</h2>
+          <p>
+            <code>Hero</code>, <code>Nav pills</code>, <code>Global search</code>,
+            <code>Panel header</code>, <code>Inventory count</code>,
+            <code>Filter chips</code>, <code>Pagination bar</code>,
+            <code>Compact list row</code>, <code>AI snapshot box</code>,
+            <code>Inline row actions</code>, <code>Empty state</code>,
+            <code>Error/success banner</code>, <code>Bulk import preview</code>。
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
